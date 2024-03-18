@@ -1,6 +1,6 @@
 from transformers import (
-    LlamaTokenizer,
-    LlamaForCausalLM,
+    AutoTokenizer,
+    AutoModelForCausalLM,
     PreTrainedModel,
     PreTrainedTokenizer,
 )
@@ -18,7 +18,7 @@ def generate_batch_completion(
     model: PreTrainedModel, tokenizer: PreTrainedTokenizer, prompt, batch_size
 ) -> list[str]:
     input_batch = [prompt for _ in range(batch_size)]
-    inputs = tokenizer(input_batch, return_tensors="pt").to(model.device)
+    inputs = tokenizer(input_batch, return_token_type_ids=False, return_tensors="pt").to(model.device)
     input_ids_cutoff = inputs.input_ids.size(dim=1)
 
     generated_ids = model.generate(
@@ -44,17 +44,17 @@ def test_model(name="Linksoul-llama2-7b",model_path="/home/Linksoul-llama2-7b"):
     out_path = f"results/{name}/eval.jsonl"
     os.makedirs(f"results/{name}", exist_ok=True)
 
-    tokenizer = LlamaTokenizer.from_pretrained(
+    tokenizer = AutoTokenizer.from_pretrained(
         model_path,
     )
 
     model = torch.compile(
-        LlamaForCausalLM.from_pretrained(
+        AutoModelForCausalLM.from_pretrained(
             model_path,
             torch_dtype=torch.bfloat16,
+            device_map="auto"
         )
         .eval()
-        .to("cuda:1")
     )
 
     run_eval(
@@ -79,6 +79,6 @@ if __name__ == "__main__":
     # name="CodeLlama-7b-Python-hf"
     # test_model(name,model_path)
 
-    model_path="codellama/CodeLlama-7b-Instruct-hf"
-    name="CodeLlama-7b-Instruct-hf"
+    model_path="/mnt/SFT_store/LLM/llama-65b-hf"
+    name="llama-65b-hf"
     test_model(name,model_path)
